@@ -8,11 +8,14 @@ import Form from 'react-bootstrap/Form';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { FormGroup } from 'react-bootstrap';
-
+import Swal from 'sweetalert2';
+import './Dashboard.css'
 const Dashboard = () => {
 
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([])
+  const [pendingTasks, setPendingTasks] = useState([])
+  const [progressTasks, setProgressTasks] = useState([])
+  const [completedTasks, setCompletedTasks] = useState([])
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false)
   const [newTask, setNewTask] = useState({title: "", description: "", status: "pendiente"})
@@ -36,9 +39,12 @@ const Dashboard = () => {
     try{
       const token = localStorage.getItem('token')
       const response = await getTasks(token)
+      console.log("GET TASKS", response.data)
       if(response.status === 200) {
         const responseData = response.data || []; 
-        setTasks(responseData)
+        setPendingTasks(responseData.pendingTasks)
+        setProgressTasks(responseData.progressTasks)
+        setCompletedTasks(responseData.completedTasks)
       }
     } catch(error) {
       if(error.response && error.response.status === 401) {
@@ -100,7 +106,22 @@ const Dashboard = () => {
 
   const handleDelete = (task) => {
     console.log("DELETE", task)
-    deleteNewTask(task.id)
+    Swal.fire({
+      title: "¿Seguro de eliminar esta tarea?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Eliminar",
+      cancelButtonText: `Cancelar`
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: "Eliminado",
+          icon: "success",
+          showConfirmButton: false,
+        });
+        deleteNewTask(task.id)
+      } 
+    });
   }
 
   useEffect(() => {
@@ -147,11 +168,34 @@ const Dashboard = () => {
         </Modal.Footer>
       </Modal>
 
-      {tasks.length === 0 
-      ? <p>No hay tareas</p>
-      : tasks.map(task => (
-        <Task key={task.id} task={task} handleEdit={() => handleEdit(task)} handleDelete={()=> handleDelete(task)}/>
-      ))}
+      <div className='todoContainer'>
+        <div className='todoColumn'>
+          <h1>Pendientes</h1>
+          {pendingTasks.length === 0 
+          ? <p>No hay tareas</p>
+          : pendingTasks.map(task => (
+            <Task key={task.id} task={task} handleEdit={() => handleEdit(task)} handleDelete={()=> handleDelete(task)}/>
+          ))}
+        </div>
+
+        <div className='todoColumn'>
+          <h1>En Progreso</h1>
+          {progressTasks.length === 0 
+          ? <p>No hay tareas</p>
+          : progressTasks.map(task => (
+            <Task key={task.id} task={task} handleEdit={() => handleEdit(task)} handleDelete={()=> handleDelete(task)}/>
+          ))}
+        </div>
+        
+        <div className='todoColumn'>
+          <h1>Completados</h1>
+          {completedTasks.length === 0 
+          ? <p>No hay tareas</p>
+          : completedTasks.map(task => (
+            <Task key={task.id} task={task} handleEdit={() => handleEdit(task)} handleDelete={()=> handleDelete(task)}/>
+          ))}
+        </div>
+      </div>
       <Toaster />
 
     </div>
